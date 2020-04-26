@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const auth = require('../../middleware/auth');
+const cryptoRandomString = require('crypto-random-string');
 const config = require('config');
 const { check, validationResult, checkSchema } = require('express-validator');
+const smtpTransport = require('../../emails/send_verification');
 
 const User = require('../../models/User');
 
@@ -67,8 +71,9 @@ router.post(
       });
 
       const salt = await bcrypt.genSalt(10);
-
       user.password = await bcrypt.hash(password, salt);
+
+      user.hash = await cryptoRandomString({ length: 128, type: 'url-safe' });
 
       await user.save();
 
@@ -88,11 +93,42 @@ router.post(
           res.json({ token });
         }
       );
+
+      const link =
+        'http://' + req.get('host') + '/api/register/verify/' + user.hash;
+      mailOptions = {
+        to: email,
+        subject: 'Please confirm your Email account',
+        html:
+          'Hello,<br> Please Click on the link to verify your email.<br><a href=' +
+          link +
+          '>Click here to verify</a>',
+      };
+
+      await smtpTransport.sendMail(mailOptions);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
     }
   }
 );
+
+router.get('/verify/:hash', async (req, res) => {
+  try {
+    const user = await User.findOne({ hash: req.params.hash });
+    if (!user) {
+      res.status(401).json({ msg: 'User not authorized' });
+    }
+
+    user.verified = true;
+    await User.updateOne({ _id: user.id }, { $unset: { hash: 1 } });
+    await user.save();
+    console.log(user);
+    res.status(400).json({ msg: 'Email is successfully verified' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
 
 module.exports = router;
