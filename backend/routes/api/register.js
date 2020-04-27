@@ -2,14 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const auth = require('../../middleware/auth');
 const cryptoRandomString = require('crypto-random-string');
 const config = require('config');
 const { check, validationResult, checkSchema } = require('express-validator');
 const smtpTransport = require('../../emails/send_verification');
 
-const User = require('../../models/User');
+const Student = require('../../models/Student');
+const Professor = require('../../models/Professor');
 
 var Schema = {
   role: {
@@ -22,7 +21,7 @@ var Schema = {
   },
 };
 
-// @route   POST api/users
+// @route   POST api/register
 // @desc    Register user
 // @access  Public
 router.post(
@@ -36,7 +35,6 @@ router.post(
     )
       .isEmail()
       .contains('fet.ba'),
-
     check(
       'password',
       'Please enter a password with 6 or more characters'
@@ -52,17 +50,20 @@ router.post(
 
     const { fname, lname, email, password, role } = req.body;
 
+    const COLLECTION_NAME = role === 'Student' ? Student : Professor;
+
     try {
       // See if user exists
-      let user = await User.findOne({ email });
+      let userStudent = await Student.findOne({ email });
+      let userProfessor = await Professor.findOne({ email });
 
-      if (user) {
+      if (userProfessor || userStudent) {
         return res
           .status(400)
           .json({ errors: [{ msg: 'User already exists' }] });
       }
 
-      user = new User({
+      user = new COLLECTION_NAME({
         fname,
         lname,
         email,
@@ -113,17 +114,23 @@ router.post(
   }
 );
 
+// @route   GET api/register/verify/:hash
+// @desc    Verify user
+// @access  Private
 router.get('/verify/:hash', async (req, res) => {
   try {
-    const user = await User.findOne({ hash: req.params.hash });
-    if (!user) {
-      res.status(401).json({ msg: 'User not authorized' });
+    const userStudent = await Student.findOne({ hash: req.params.hash });
+    const userProfessor = await Professor.findOne({ hash: req.params.hash });
+    if (!userStudent && !userProfessor) {
+      return res.status(401).json({ msg: 'User not authorized' });
     }
 
+    const COLLECTION_NAME = !userProfessor ? Student : Professor;
+    const user = !userProfessor ? userStudent : userProfessor;
+
     user.verified = true;
-    await User.updateOne({ _id: user.id }, { $unset: { hash: 1 } });
+    await COLLECTION_NAME.updateOne({ _id: user.id }, { $unset: { hash: 1 } });
     await user.save();
-    console.log(user);
     res.status(400).json({ msg: 'Email is successfully verified' });
   } catch (err) {
     console.error(err.message);

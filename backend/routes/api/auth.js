@@ -2,17 +2,22 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const auth = require('../../middleware/auth');
-const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const { check, validationResult } = require('express-validator');
+
+const Student = require('../../models/Student');
+const Professor = require('../../models/Professor');
 
 // @route   GET api/auth
 // @desc    Load user
 // @access  Public
 router.get('/', auth, async (req, res) => {
+  const COLLECTION_NAME = req.user.role === 'Student' ? Student : Professor;
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await COLLECTION_NAME.findById(req.user.id).select(
+      '-password'
+    );
     res.json(user);
   } catch (err) {
     console.log(err.message);
@@ -39,13 +44,17 @@ router.post(
 
     try {
       // See if user exists
-      let user = await User.findOne({ email });
 
-      if (!user) {
+      const userStudent = await Student.findOne({ email });
+      const userProfessor = await Professor.findOne({ email });
+
+      if (!userStudent && !userProfessor) {
         return res
           .status(400)
           .json({ errors: [{ msg: 'Invalid Credentials' }] });
       }
+
+      const user = !userProfessor ? userStudent : userProfessor;
 
       const isMatch = await bcrypt.compare(password, user.password);
 

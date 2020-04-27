@@ -1,6 +1,6 @@
 const moongose = require('mongoose');
 
-const UserSchema = new moongose.Schema({
+const ProfessorSchema = new moongose.Schema({
   fname: {
     type: String,
     required: true,
@@ -8,6 +8,9 @@ const UserSchema = new moongose.Schema({
   lname: {
     type: String,
     required: true,
+  },
+  academicRank: {
+    type: String,
   },
   email: {
     type: String,
@@ -17,6 +20,13 @@ const UserSchema = new moongose.Schema({
   password: {
     type: String,
     required: true,
+  },
+  faculty: {
+    type: String,
+    default: 'Faculty Of Electrical Engineering Tuzla',
+  },
+  subjects: {
+    type: [String],
   },
   role: {
     type: String,
@@ -36,4 +46,4 @@ const UserSchema = new moongose.Schema({
   },
 });
 
-module.exports = User = moongose.model('user', UserSchema);
+module.exports = Professor = moongose.model('professor', ProfessorSchema);

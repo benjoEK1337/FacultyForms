@@ -11,5 +11,6 @@ app.use(express.json({ extended: false }));
 // Define Routes
 app.use('/api/register', require('./backend/routes/api/register'));
 app.use('/api/auth', require('./backend/routes/api/auth'));
+app.use('/api/profile', require('./backend/routes/api/profile'));
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
