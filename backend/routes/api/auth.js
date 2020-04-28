@@ -5,6 +5,7 @@ const auth = require('../../middleware/auth');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const { check, validationResult } = require('express-validator');
+const smtpTransport = require('../../emails/send_verification');
 
 const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');

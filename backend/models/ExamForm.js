@@ -1,8 +1,7 @@
-const mongoose = required('mongoose');
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-// Create Schema
-
-const ExamForm = new mongoose.Schema({
+const ExamFormSchema = new mongoose.Schema({
   student: {
     type: Schema.Types.ObjectId,
     ref: 'student',
@@ -11,27 +10,19 @@ const ExamForm = new mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: 'professor',
   },
-  currentSemestar: {
-    type: Boolean,
-    default: true,
-  },
-  currentAcademicYear: {
-    type: Boolean,
-    default: true,
-  },
   applicationNumber: {
     type: Number,
     required: true,
   },
-  yearOfStudy: {
+  currentYearOfStudy: {
     type: Number,
     required: true,
   },
-  semester: {
+  currentSemestar: {
     type: Number,
     required: true,
   },
-  academicYear: {
+  currentAcademicYear: {
     type: String,
     required: true,
   },
@@ -58,3 +49,5 @@ const ExamForm = new mongoose.Schema({
     type: Date,
   },
 });
+
+module.exports = ExamForm = mongoose.model('examform', ExamFormSchema);

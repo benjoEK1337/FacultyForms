@@ -32,9 +32,7 @@ router.post(
     check(
       'email',
       'Please include a valid email. Only fet.ba domain is accepted'
-    )
-      .isEmail()
-      .contains('fet.ba'),
+    ).isEmail(),
     check(
       'password',
       'Please enter a password with 6 or more characters'

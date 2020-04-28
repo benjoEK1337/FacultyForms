@@ -1,6 +1,6 @@
-const moongose = require('mongoose');
+const mongoose = require('mongoose');
 
-const StudentSchema = new moongose.Schema({
+const StudentSchema = new mongoose.Schema({
   fname: {
     type: String,
     required: true,
@@ -42,7 +42,7 @@ const StudentSchema = new moongose.Schema({
     type: Number,
     default: 0,
     min: 0,
-    max: 6,
+    max: 5,
   },
   verified: {
     type: Boolean,
@@ -58,4 +58,4 @@ const StudentSchema = new moongose.Schema({
   },
 });
 
-module.exports = Student = moongose.model('student', StudentSchema);
+module.exports = Student = mongoose.model('student', StudentSchema);

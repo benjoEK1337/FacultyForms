@@ -1,6 +1,6 @@
-const moongose = require('mongoose');
+const mongoose = require('mongoose');
 
-const ProfessorSchema = new moongose.Schema({
+const ProfessorSchema = new mongoose.Schema({
   fname: {
     type: String,
     required: true,
@@ -46,4 +46,4 @@ const ProfessorSchema = new moongose.Schema({
   },
 });
 
-module.exports = Professor = moongose.model('professor', ProfessorSchema);
+module.exports = Professor = mongoose.model('professor', ProfessorSchema);

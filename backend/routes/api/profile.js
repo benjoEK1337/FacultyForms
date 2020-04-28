@@ -21,6 +21,7 @@ router.post(
   [
     check('fname', 'First name is required').not().isEmpty(),
     check('lname', 'Last name is required').not().isEmpty(),
+    check('faculty', 'Faculty is required').not().isEmpty(),
     check('fieldOfStudy', 'Field of study is required').not().isEmpty(),
     check('indexNumber', 'Index number is required').not().isEmpty(),
   ],
@@ -30,15 +31,29 @@ router.post(
       res.status(400).json({ errors: errors.array() });
     }
 
+    const {
+      fname,
+      lname,
+      faculty,
+      fieldOfStudy,
+      indexNumber,
+      numberOfExamForms,
+      numberOfActiveExamForms,
+    } = req.body;
+
+    const profileFields = {};
+
+    profileFields.fname = fname;
+    profileFields.lname = lname;
+    profileFields.fieldOfStudy = fieldOfStudy;
+    profileFields.indexNumber = indexNumber;
+    profileFields.faculty = faculty;
+
+    if (numberOfExamForms) profileFields.numberOfExamForms = numberOfExamForms;
+    if (numberOfActiveExamForms)
+      profileFields.numberOfActiveExamForms = numberOfActiveExamForms;
+
     try {
-      const { fname, lname, fieldOfStudy, indexNumber } = req.body;
-      const profileFields = {};
-
-      profileFields.fname = fname;
-      profileFields.lname = lname;
-      profileFields.fieldOfStudy = fieldOfStudy;
-      profileFields.indexNumber = indexNumber;
-
       let student = await Student.findById(req.user.id).select('-password');
 
       if (student) {
@@ -66,6 +81,7 @@ router.post(
   [
     check('fname', 'First name is required').not().isEmpty(),
     check('lname', 'Last name is required').not().isEmpty(),
+    check('faculty', 'Faculty is required').not().isEmpty(),
     check('academicRank', 'Academic Rank is required').not().isEmpty(),
     check('subjects', 'Subjects are required').not().isEmpty(),
   ],
@@ -76,11 +92,12 @@ router.post(
     }
 
     try {
-      const { fname, lname, academicRank, subjects } = req.body;
+      const { fname, lname, faculty, academicRank, subjects } = req.body;
       const profileFields = {};
 
       profileFields.fname = fname;
       profileFields.lname = lname;
+      profileFields.faculty = faculty;
       profileFields.academicRank = academicRank;
       profileFields.subjects = subjects;
 
