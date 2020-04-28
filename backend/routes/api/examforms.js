@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { check, validationResult, checkSchema } = require('express-validator');
+const { check, validationResult } = require('express-validator');
 
 const auth = require('../../middleware/auth');
 const isProfessor = require('../../middleware/isProfessor');
@@ -10,7 +10,7 @@ const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');
 const Examform = require('../../models/ExamForm');
 
-// @route   POST api/examForms/student/exam-form
+// @route   POST api/examforms/student
 // @desc    Upate or create exam form
 // @access  Private
 router.post(
@@ -93,6 +93,7 @@ router.post(
       let populatedForms = await Examform.countDocuments({
         student: req.user.id,
         currentSemestar,
+        currentAcademicYear,
       });
 
       if (populatedForms >= 5)
@@ -100,19 +101,32 @@ router.post(
           .status(429)
           .json({ msg: 'You can only 5 forms per semester populate.' });
 
+      const formExists = await Examform.findOne({
+        student: req.user.id,
+        currentSemestar,
+        currentAcademicYear,
+        subjectName,
+      });
+
+      if (formExists)
+        return res.status(400).json({ msg: 'Form already exist.' });
+
       let examForm;
-      if (applicationNumber !== '')
+      if (!applicationNumber) {
+        const lastForm = await Examform.find().limit(1).sort({ $natural: -1 });
+        if (!lastForm[0]) applicationNumber = 1;
+        else applicationNumber = lastForm[0].applicationNumber + 1;
+        examFormFields.applicationNumber = applicationNumber;
+      } else {
         examForm = await Examform.findOne({ applicationNumber });
+      }
 
       if (!examForm) {
-        const numberOfForms = await Examform.countDocuments();
-        examFormFields.applicationNumber = numberOfForms + 1;
         examForm = new Examform(examFormFields);
         await examForm.save();
-        examForm = await Examform.findOne(applicationNumber).populate(
-          'student',
-          ['fname', 'lname', 'indexNumber']
-        );
+        examForm = await Examform.findOne({
+          applicationNumber,
+        }).populate('student', ['fname', 'lname', 'indexNumber']);
         return res.status(200).json(examForm);
       }
 
@@ -122,10 +136,51 @@ router.post(
         { new: true }
       ).populate('student', ['fname', 'lname', 'indexNumber']);
 
-      return res.json(examForm);
+      res.json(examForm);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server Error');
+    }
+  }
+);
+
+// @route   POST api/examforms/professor
+// @desc    Populate grade
+// @access  Private
+
+router.post(
+  '/professor',
+  auth,
+  isProfessor,
+  [
+    check('grade', 'Grade is required').not().isEmpty(),
+    check('applicationNumber', 'Application number is required')
+      .not()
+      .isEmpty(),
+    check('dateOfExam', 'Date of Exam is required').not().isEmpty(),
+  ],
+  async (req, res) => {
+    const { grade, applicationNumber, dateOfExam } = req.body;
+
+    try {
+      let examForm = await Examform.findOne({
+        applicationNumber,
+      }).populate('student', ['fname', 'lname', 'indexNumber']);
+
+      if (!examForm)
+        return res.status(404).json({ msg: 'Exam form not found' });
+
+      if (examForm.professor.toString() !== req.user.id)
+        return res.status(401).json({ msg: 'Not authorized' });
+
+      examForm.grade = grade;
+      examForm.dateOfExam = dateOfExam;
+      await examForm.save();
+
+      res.json(examForm);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
     }
   }
 );

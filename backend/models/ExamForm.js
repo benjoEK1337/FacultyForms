@@ -35,7 +35,7 @@ const ExamFormSchema = new mongoose.Schema({
     required: true,
   },
   firstTimeListenedSemester: {
-    type: String,
+    type: Number,
     required: true,
   },
   professorExaminer: {
@@ -46,7 +46,7 @@ const ExamFormSchema = new mongoose.Schema({
     type: Number,
   },
   dateOfExam: {
-    type: Date,
+    type: String,
   },
 });
 
