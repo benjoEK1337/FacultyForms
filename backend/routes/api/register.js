@@ -131,7 +131,7 @@ router.get('/verify/:hash', async (req, res) => {
     user.verified = true;
     await COLLECTION_NAME.updateOne({ _id: user.id }, { $unset: { hash: 1 } });
     await user.save();
-    res.status(400).json({ msg: 'Email is successfully verified' });
+    res.json({ msg: 'Email is successfully verified' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

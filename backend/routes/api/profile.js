@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { check, validationResult, checkSchema } = require('express-validator');
 const auth = require('../../middleware/auth');
+const isProfessor = require('../../middleware/isProfessor');
+const isStudent = require('../../middleware/isStudent');
 
 const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');
@@ -12,6 +14,7 @@ const Professor = require('../../models/Professor');
 router.post(
   '/student/info',
   auth,
+  isStudent,
   [
     check('fname', 'First name is required').not().isEmpty(),
     check('lname', 'Last name is required').not().isEmpty(),
@@ -25,27 +28,23 @@ router.post(
     }
 
     try {
-      if (req.user.role !== 'Professor') {
-        const { fname, lname, fieldOfStudy, indexNumber } = req.body;
-        const profileFields = {};
+      const { fname, lname, fieldOfStudy, indexNumber } = req.body;
+      const profileFields = {};
 
-        profileFields.fname = fname;
-        profileFields.lname = lname;
-        profileFields.fieldOfStudy = fieldOfStudy;
-        profileFields.indexNumber = indexNumber;
+      profileFields.fname = fname;
+      profileFields.lname = lname;
+      profileFields.fieldOfStudy = fieldOfStudy;
+      profileFields.indexNumber = indexNumber;
 
-        let student = await Student.findById(req.user.id).select('-password');
+      let student = await Student.findById(req.user.id).select('-password');
 
-        if (student) {
-          student = await Student.findOneAndUpdate(
-            { _id: req.user.id },
-            { $set: profileFields },
-            { new: true }
-          );
-          return res.json(student);
-        }
-      } else {
-        return res.status(401).json({ msg: 'User not authorized' });
+      if (student) {
+        student = await Student.findOneAndUpdate(
+          { _id: req.user.id },
+          { $set: profileFields },
+          { new: true }
+        );
+        return res.json(student);
       }
     } catch (err) {
       console.error(err);
@@ -60,6 +59,7 @@ router.post(
 router.post(
   '/professor/info',
   auth,
+  isProfessor,
   [
     check('fname', 'First name is required').not().isEmpty(),
     check('lname', 'Last name is required').not().isEmpty(),
@@ -73,27 +73,23 @@ router.post(
     }
 
     try {
-      if (req.user.role !== 'Student') {
-        const { fname, lname, academicRank, subjects } = req.body;
-        const profileFields = {};
+      const { fname, lname, academicRank, subjects } = req.body;
+      const profileFields = {};
 
-        profileFields.fname = fname;
-        profileFields.lname = lname;
-        profileFields.academicRank = academicRank;
-        profileFields.subjects = subjects;
+      profileFields.fname = fname;
+      profileFields.lname = lname;
+      profileFields.academicRank = academicRank;
+      profileFields.subjects = subjects;
 
-        let professor = await Professor.findById(req.user.id);
+      let professor = await Professor.findById(req.user.id);
 
-        if (professor) {
-          professor = await Professor.findOneAndUpdate(
-            { _id: req.user.id },
-            { $set: profileFields },
-            { new: true }
-          );
-          return res.json(professor);
-        }
-      } else {
-        return res.status(401).json({ msg: 'User not authorized' });
+      if (professor) {
+        professor = await Professor.findOneAndUpdate(
+          { _id: req.user.id },
+          { $set: profileFields },
+          { new: true }
+        );
+        return res.json(professor);
       }
     } catch (err) {
       console.error(err);
