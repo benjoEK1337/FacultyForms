@@ -97,13 +97,17 @@ router.post(
 
       const link =
         'http://' + req.get('host') + '/api/register/verify/' + user.hash;
-      mailOptions = {
+      const mailOptions = {
         to: email,
         subject: 'Please confirm your Email account',
         html:
-          'Hello,<br> Please Click on the link to verify your email.<br><a href=' +
+          'Hello ' +
+          fname +
+          ' ' +
+          lname +
+          ', <br><br> Please Click on the link to verify your email.<br><a href=' +
           link +
-          '>Click here to verify</a>',
+          '>Click here to verify</a><br><br>Sincerely,<br>Admin Team.<br>',
       };
 
       await smtpTransport.sendMail(mailOptions);
