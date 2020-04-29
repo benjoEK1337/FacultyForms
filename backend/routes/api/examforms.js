@@ -49,7 +49,6 @@ router.post(
     }
 
     let {
-      applicationNumber,
       currentYearOfStudy,
       currentSemestar,
       currentAcademicYear,
@@ -60,9 +59,6 @@ router.post(
     } = req.body;
 
     let examFormFields = {};
-
-    if (applicationNumber !== '')
-      examFormFields.applicationNumber = applicationNumber;
 
     examFormFields.student = req.user.id;
     examFormFields.currentYearOfStudy = currentYearOfStudy;
@@ -80,6 +76,7 @@ router.post(
         lname: professorExaminer.split(' ')[1],
       });
 
+      // If professor doesn't exist or if the subject in form is not the one that professor teach
       if (!professor || !professor.subjects.includes(subjectName)) {
         return res.status(404).json({
           msg:
@@ -101,37 +98,37 @@ router.post(
           .status(429)
           .json({ msg: 'You can only 5 forms per semester populate.' });
 
-      const formExists = await Examform.findOne({
+      // Check if form exist
+      let examForm = await Examform.findOne({
         student: req.user.id,
         currentSemestar,
         currentAcademicYear,
         subjectName,
-      });
+      }).populate('student', ['fname', 'lname', 'indexNumber']);
 
-      if (formExists)
-        return res.status(400).json({ msg: 'Form already exist.' });
-
-      let examForm;
-      if (!applicationNumber) {
-        const lastForm = await Examform.find().limit(1).sort({ $natural: -1 });
-        if (!lastForm[0]) applicationNumber = 1;
-        else applicationNumber = lastForm[0].applicationNumber + 1;
-        examFormFields.applicationNumber = applicationNumber;
-      } else {
-        examForm = await Examform.findOne({ applicationNumber });
-      }
-
+      // Making new examForm if it doesn't exist
       if (!examForm) {
+        const lastForm = await Examform.find().limit(1).sort({ $natural: -1 });
+        if (!lastForm[0]) examFormNumber = 1;
+        else examFormNumber = lastForm[0].examFormNumber + 1;
+        examFormFields.examFormNumber = examFormNumber;
+        console.log('ne bi trebalo ovdje');
         examForm = new Examform(examFormFields);
         await examForm.save();
         examForm = await Examform.findOne({
-          applicationNumber,
+          examFormNumber,
         }).populate('student', ['fname', 'lname', 'indexNumber']);
         return res.status(200).json(examForm);
       }
 
+      // If exists update
       examForm = await Examform.findOneAndUpdate(
-        { applicationNumber },
+        {
+          student: req.user.id,
+          currentSemestar,
+          currentAcademicYear,
+          subjectName,
+        },
         { $set: examFormFields },
         { new: true }
       ).populate('student', ['fname', 'lname', 'indexNumber']);
@@ -147,24 +144,21 @@ router.post(
 // @route   POST api/examforms/professor
 // @desc    Populate grade
 // @access  Private
-
 router.post(
   '/professor',
   auth,
   isProfessor,
   [
     check('grade', 'Grade is required').not().isEmpty(),
-    check('applicationNumber', 'Application number is required')
-      .not()
-      .isEmpty(),
+    check('examFormNumber', 'Application number is required').not().isEmpty(),
     check('dateOfExam', 'Date of Exam is required').not().isEmpty(),
   ],
   async (req, res) => {
-    const { grade, applicationNumber, dateOfExam } = req.body;
+    const { grade, examFormNumber, dateOfExam } = req.body;
 
     try {
       let examForm = await Examform.findOne({
-        applicationNumber,
+        examFormNumber,
       }).populate('student', ['fname', 'lname', 'indexNumber']);
 
       if (!examForm)

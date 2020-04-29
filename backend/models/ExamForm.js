@@ -10,7 +10,7 @@ const ExamFormSchema = new mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: 'professor',
   },
-  applicationNumber: {
+  examFormNumber: {
     type: Number,
     required: true,
   },
