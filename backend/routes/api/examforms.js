@@ -169,4 +169,38 @@ router.post(
   }
 );
 
+// @route   DELETE api/examforms
+// @desc    Delete exam form
+// @access  Private
+router.delete(
+  '/',
+  auth,
+  isStudent,
+  [check('_id', 'ID is not valid.').notEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ errors: errors.array({ onlyFirstError: true }) });
+    }
+
+    const { _id } = req.body;
+
+    try {
+      let examForm = await Examform.findOneAndRemove({
+        _id,
+        student: req.user.id,
+      });
+      if (!examForm) {
+        return res.status(400).json({ msg: 'Exam form not found.' });
+      }
+      res.json({ msg: 'Your exam form is deleted!' });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  }
+);
+
 module.exports = router;
