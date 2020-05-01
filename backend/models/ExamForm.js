@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ExamFormSchema = new mongoose.Schema({
+  _id: {
+    type: Number,
+    required: true,
+  },
   student: {
     type: Schema.Types.ObjectId,
     ref: 'student',
@@ -9,10 +13,6 @@ const ExamFormSchema = new mongoose.Schema({
   professor: {
     type: Schema.Types.ObjectId,
     ref: 'professor',
-  },
-  examFormNumber: {
-    type: Number,
-    required: true,
   },
   currentYearOfStudy: {
     type: Number,
@@ -30,7 +30,7 @@ const ExamFormSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  firstTimeListenedYear: {
+  firstTimeListenedAcademicYear: {
     type: String,
     required: true,
   },
@@ -46,7 +46,7 @@ const ExamFormSchema = new mongoose.Schema({
     type: Number,
   },
   dateOfExam: {
-    type: String,
+    type: Date,
   },
 });
 

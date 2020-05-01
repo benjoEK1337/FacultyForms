@@ -6,6 +6,11 @@ const auth = require('../../middleware/auth');
 const isProfessor = require('../../middleware/isProfessor');
 const isStudent = require('../../middleware/isStudent');
 
+const {
+  studentExamFormValidationRules,
+  validateStudentExamForm,
+} = require('../../validators/examFormStudent');
+
 const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');
 const Examform = require('../../models/ExamForm');
@@ -17,43 +22,15 @@ router.post(
   '/student',
   auth,
   isStudent,
-  [
-    check('currentYearOfStudy', 'Current year of study is required')
-      .not()
-      .isEmpty(),
-    check('currentSemestar', 'Current semester is required').not().isEmpty(),
-    check('currentAcademicYear', 'Current academic year is required')
-      .not()
-      .isEmpty(),
-    check('subjectName', 'Subject name is required').not().isEmpty(),
-    check(
-      'firstTimeListenedYear',
-      'The year when you first time listened subject is required'
-    )
-      .not()
-      .isEmpty(),
-    check(
-      'firstTimeListenedSemester',
-      'The semester when you first time listened subject required'
-    )
-      .not()
-      .isEmpty(),
-    check('professorExaminer', 'Name of professor examiner is required')
-      .not()
-      .isEmpty(),
-  ],
+  studentExamFormValidationRules(),
+  validateStudentExamForm,
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-    }
-
     let {
       currentYearOfStudy,
       currentSemestar,
       currentAcademicYear,
       subjectName,
-      firstTimeListenedYear,
+      firstTimeListenedAcademicYear,
       firstTimeListenedSemester,
       professorExaminer,
     } = req.body;
@@ -65,7 +42,7 @@ router.post(
     examFormFields.currentSemestar = currentSemestar;
     examFormFields.currentAcademicYear = currentAcademicYear;
     examFormFields.subjectName = subjectName;
-    examFormFields.firstTimeListenedYear = firstTimeListenedYear;
+    examFormFields.firstTimeListenedAcademicYear = firstTimeListenedAcademicYear;
     examFormFields.firstTimeListenedSemester = firstTimeListenedSemester;
     examFormFields.professorExaminer = professorExaminer;
 
@@ -108,18 +85,24 @@ router.post(
 
       // Making new examForm if it doesn't exist
       if (!examForm) {
+        // get the last inserted document and give it's _id incremented to new exam form
         const lastForm = await Examform.find().limit(1).sort({ $natural: -1 });
-        if (!lastForm[0]) examFormNumber = 1;
-        else examFormNumber = lastForm[0].examFormNumber + 1;
-        examFormFields.examFormNumber = examFormNumber;
-        console.log('ne bi trebalo ovdje');
+        if (!lastForm[0]) _id = 1;
+        else _id = lastForm[0]._id + 1;
+        examFormFields._id = _id;
+
         examForm = new Examform(examFormFields);
         await examForm.save();
+
         examForm = await Examform.findOne({
-          examFormNumber,
+          _id,
         }).populate('student', ['fname', 'lname', 'indexNumber']);
         return res.status(200).json(examForm);
       }
+
+      // If logged in students id doesn't match searched exam form owner
+      if (examForm.student.toString() !== req.user.id)
+        return res.status(401).json({ msg: 'Not authorized' });
 
       // If exists update
       examForm = await Examform.findOneAndUpdate(
@@ -149,16 +132,23 @@ router.post(
   auth,
   isProfessor,
   [
-    check('grade', 'Grade is required').not().isEmpty(),
-    check('examFormNumber', 'Application number is required').not().isEmpty(),
-    check('dateOfExam', 'Date of Exam is required').not().isEmpty(),
+    check('grade', 'Grade is not valid.').notEmpty().isIn([6, 7, 8, 9, 10]),
+    check('_id', 'Application number is not valid.').notEmpty().isInt(),
+    check('dateOfExam', 'Date of Exam is not valid.').notEmpty(),
   ],
   async (req, res) => {
-    const { grade, examFormNumber, dateOfExam } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ errors: errors.array({ onlyFirstError: true }) });
+    }
+
+    const { grade, _id, dateOfExam } = req.body;
 
     try {
       let examForm = await Examform.findOne({
-        examFormNumber,
+        _id,
       }).populate('student', ['fname', 'lname', 'indexNumber']);
 
       if (!examForm)

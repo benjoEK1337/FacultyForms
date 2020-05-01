@@ -8,6 +8,16 @@ const auth = require('../../middleware/auth');
 const isProfessor = require('../../middleware/isProfessor');
 const isStudent = require('../../middleware/isStudent');
 
+const {
+  studentProfileValidationRules,
+  validateStudentProfile,
+} = require('../../validators/studentProfile');
+
+const {
+  professorProfileValidationRules,
+  validateProfessorProfile,
+} = require('../../validators/professorProfile');
+
 const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');
 
@@ -18,19 +28,9 @@ router.post(
   '/student/info',
   auth,
   isStudent,
-  [
-    check('fname', 'First name is required').not().isEmpty(),
-    check('lname', 'Last name is required').not().isEmpty(),
-    check('faculty', 'Faculty is required').not().isEmpty(),
-    check('fieldOfStudy', 'Field of study is required').not().isEmpty(),
-    check('indexNumber', 'Index number is required').not().isEmpty(),
-  ],
+  studentProfileValidationRules(),
+  validateStudentProfile,
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-    }
-
     const {
       fname,
       lname,
@@ -78,19 +78,9 @@ router.post(
   '/professor/info',
   auth,
   isProfessor,
-  [
-    check('fname', 'First name is required').not().isEmpty(),
-    check('lname', 'Last name is required').not().isEmpty(),
-    check('faculty', 'Faculty is required').not().isEmpty(),
-    check('academicRank', 'Academic Rank is required').not().isEmpty(),
-    check('subjects', 'Subjects are required').not().isEmpty(),
-  ],
+  professorProfileValidationRules(),
+  validateProfessorProfile,
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-    }
-
     try {
       const { fname, lname, faculty, academicRank, subjects } = req.body;
       const profileFields = {};
@@ -125,7 +115,7 @@ router.post(
   '/change-password',
   auth,
   [
-    check('oldPassword', 'Please enter old password').not().isEmpty(),
+    check('oldPassword', 'Please enter old password').notEmpty(),
     check(
       'newPassword',
       'Please enter a new password with 6 or more characters'
@@ -166,7 +156,7 @@ router.post(
 router.post(
   '/change-email',
   auth,
-  [check('newEmail', 'Email is required').isEmail()],
+  [check('newEmail', 'Email is not valid').isEmail()],
   async (req, res) => {
     const errors = validationResult(req);
 

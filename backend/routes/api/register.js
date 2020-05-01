@@ -4,41 +4,24 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cryptoRandomString = require('crypto-random-string');
 const config = require('config');
-const { check, validationResult, checkSchema } = require('express-validator');
+const { validationResult } = require('express-validator');
 const smtpTransport = require('../../emails/send_verification');
 
 const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');
 
-var Schema = {
-  role: {
-    in: 'body',
-    matches: {
-      options: [/\b(?:Student|Professor)\b/],
-      errorMessage:
-        'Please include a valid role. Role could be Student or Professor',
-    },
-  },
-};
+const {
+  registrationValidationRules,
+  validateRegistration,
+} = require('../../validators/register');
 
 // @route   POST api/register
 // @desc    Register user
 // @access  Public
 router.post(
   '/',
-  [
-    check('fname', 'First name is required').not().isEmpty(),
-    check('lname', 'Last name is required').not().isEmpty(),
-    check(
-      'email',
-      'Please include a valid email. Only fet.ba domain is accepted'
-    ).isEmail(),
-    check(
-      'password',
-      'Please enter a password with 6 or more characters'
-    ).isLength({ min: 6 }),
-    checkSchema(Schema),
-  ],
+  registrationValidationRules(),
+  validateRegistration,
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -57,7 +40,7 @@ router.post(
 
       if (userProfessor || userStudent) {
         return res
-          .status(400)
+          .status(409)
           .json({ errors: [{ msg: 'User already exists' }] });
       }
 

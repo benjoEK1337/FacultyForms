@@ -27,7 +27,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // @route   POST api/auth
-// @desc    Authenticate user & get token
+// @desc    Login user & get token
 // @access  Public
 router.post(
   '/login',
@@ -38,7 +38,9 @@ router.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res
+        .status(400)
+        .json({ errors: errors.array({ onlyFirstError: true }) });
     }
 
     const { email, password } = req.body;
