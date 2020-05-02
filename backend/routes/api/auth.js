@@ -5,10 +5,10 @@ const auth = require('../../middleware/auth');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const { check, validationResult } = require('express-validator');
-const smtpTransport = require('../../emails/send_verification');
 
 const Student = require('../../models/Student');
 const Professor = require('../../models/Professor');
+const Admin = require('../../models/Admin');
 
 // @route   GET api/auth
 // @desc    Load user
@@ -46,18 +46,22 @@ router.post(
     const { email, password } = req.body;
 
     try {
-      // See if user exists
-
+      // If Student exists program don't search in base for professor & admin.
+      const userProfessor, userAdmin;
       const userStudent = await Student.findOne({ email });
-      const userProfessor = await Professor.findOne({ email });
 
-      if (!userStudent && !userProfessor) {
+      if(!userStudent) userProfessor = await Professor.findOne({ email });
+      else if(!userStudent && !userProfessor) userAdmin = await Admin.findOne({ email });
+
+      if (!userStudent && !userProfessor && !userAdmin) {
         return res
           .status(400)
           .json({ errors: [{ msg: 'Invalid Credentials' }] });
       }
 
-      const user = !userProfessor ? userStudent : userProfessor;
+      const user;
+      if(userAdmin) user = userAdmin;
+      else user = !userProfessor ? userStudent : userProfessor;
 
       const isMatch = await bcrypt.compare(password, user.password);
 
