@@ -47,11 +47,12 @@ router.post(
 
     try {
       // If Student exists program don't search in base for professor & admin.
-      const userProfessor, userAdmin;
+      let userProfessor, userAdmin;
       const userStudent = await Student.findOne({ email });
 
-      if(!userStudent) userProfessor = await Professor.findOne({ email });
-      else if(!userStudent && !userProfessor) userAdmin = await Admin.findOne({ email });
+      if (!userStudent) userProfessor = await Professor.findOne({ email });
+      else if (!userStudent && !userProfessor)
+        userAdmin = await Admin.findOne({ email });
 
       if (!userStudent && !userProfessor && !userAdmin) {
         return res
@@ -59,8 +60,8 @@ router.post(
           .json({ errors: [{ msg: 'Invalid Credentials' }] });
       }
 
-      const user;
-      if(userAdmin) user = userAdmin;
+      let user;
+      if (userAdmin) user = userAdmin;
       else user = !userProfessor ? userStudent : userProfessor;
 
       const isMatch = await bcrypt.compare(password, user.password);
